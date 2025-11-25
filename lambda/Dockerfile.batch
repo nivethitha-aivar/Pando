@@ -1,0 +1,87 @@
+# Dockerfile for AWS Batch Jobs
+# This image is used ONLY for Batch (batch_pdf_processor.py)
+# Uses standard Python base image (no Lambda runtime needed)
+
+FROM python:3.13-slim
+
+# Install system binaries and build tools
+# Debian (python:3.13-slim) uses apt-get
+RUN apt-get update && apt-get install -y \
+    poppler-utils \
+    gcc \
+    g++ \
+    python3-dev \
+    git \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    libpng-dev \
+    libtiff-dev \
+    zlib1g-dev \
+    libwebp-dev \
+    libjpeg-dev \
+    libssl3 \
+    libgl1 \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libgomp1 \
+    wget \
+    tar \
+    gzip \
+    make \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build and install Leptonica (required by Tesseract)
+RUN cd /tmp && \
+    wget https://github.com/DanBloomberg/leptonica/releases/download/1.82.0/leptonica-1.82.0.tar.gz && \
+    tar -zxvf leptonica-1.82.0.tar.gz && \
+    cd leptonica-1.82.0 && \
+    ./configure && \
+    make && \
+    make install && \
+    (/sbin/ldconfig || true) && \
+    rm -rf /tmp/leptonica-*
+
+# Build and install Tesseract from source
+RUN cd /tmp && \
+    git clone https://github.com/tesseract-ocr/tesseract.git && \
+    cd tesseract && \
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig && \
+    ./autogen.sh && \
+    ./configure && \
+    make && \
+    make install && \
+    (/sbin/ldconfig || true) && \
+    rm -rf /tmp/tesseract
+
+# Download Tesseract language data files
+RUN mkdir -p /usr/local/share/tessdata && \
+    cd /usr/local/share/tessdata && \
+    wget https://github.com/tesseract-ocr/tessdata/raw/main/osd.traineddata && \
+    wget https://github.com/tesseract-ocr/tessdata/raw/main/eng.traineddata
+
+# Set working directory
+WORKDIR /var/task
+
+# Copy requirements and install dependencies
+# Note: PaddleOCR has been removed - we now use AWS Textract for orientation detection
+# Textract is called via boto3 (already in requirements.txt), no local models needed
+COPY requirements.txt .
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt && \
+    python -c "import boto3; print('boto3 installed successfully')" && \
+    python -c "from PIL import Image; print('Pillow installed successfully')" && \
+    python -c "import pytesseract; print('pytesseract installed successfully')"
+
+# Copy Batch processor code and utils
+# batch_pdf_processor.py is now standalone (no dependency on lambda_function.py)
+COPY batch_pdf_processor.py .
+COPY utils.py .
+
+# Set the default command for Batch
+# Using unbuffered Python output for real-time logs in CloudWatch
+# This can be overridden in Batch job definition, but this is the default
+CMD ["python", "-u", "batch_pdf_processor.py"]
