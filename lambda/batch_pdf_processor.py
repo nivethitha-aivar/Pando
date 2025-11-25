@@ -223,7 +223,7 @@ def detect_orientation_with_textract(pil_image):
             logger.warning("   No text lines found in Textract response, assuming upright")
             # Still charge for the API call even if no lines found
             cost = TEXTRACT_COST_PER_PAGE
-            logger.info(f"   💰 Textract cost for this page: ${cost:.4f}")
+            logger.info(f"   Textract cost for this page: ${cost:.4f}")
             return (0, 1.0, cost)
         
         angles = []
@@ -288,12 +288,12 @@ def detect_orientation_with_textract(pil_image):
         # Only rotate if a significant portion of the page is rotated (e.g. >40%)
         # This filters out small stamps or headers that might be upright on a rotated page
         cost = TEXTRACT_COST_PER_PAGE
-        logger.info(f"   💰 Textract cost for this page: ${cost:.4f}")
+        logger.info(f"   Textract cost for this page: ${cost:.4f}")
         
         if dominance_ratio > 0.4:
             if dominant_angle != 0:
-                logger.info(f"   ✅ Detected rotation via line geometry: {dominant_angle}° ({dominance_ratio:.2%} of lines)")
-                print(f"   ✅ AWS Textract detected rotation: {dominant_angle}° (via line geometry)", flush=True)
+                logger.info(f"   Detected rotation via line geometry: {dominant_angle}° ({dominance_ratio:.2%} of lines)")
+                print(f"   AWS Textract detected rotation: {dominant_angle}° (via line geometry)", flush=True)
                 return (dominant_angle, 1.0, cost)
         
         logger.info(f"   Page determined to be Upright (0°) based on line geometry (dominant angle: {dominant_angle}° but only {dominance_ratio:.2%} of lines)")
@@ -301,8 +301,8 @@ def detect_orientation_with_textract(pil_image):
         return (0, 1.0, cost)
             
     except Exception as e:
-        logger.warning(f"   ❌ AWS Textract Error: {str(e)}")
-        print(f"   ❌ AWS Textract Error: {str(e)}", flush=True)
+        logger.warning(f"   AWS Textract Error: {str(e)}")
+        print(f"   AWS Textract Error: {str(e)}", flush=True)
         # Fallback to 0 if API fails - no cost if API call failed
         return (0, 0.0, 0.0)
 
@@ -457,7 +457,7 @@ def rotate_pdf_optimized(pdf_file_path, output_pdf_path):
                             # Verification:
                             # - Textract says ROTATE_90 (page is 90° CW) → detected_rotation = 90
                             # - We apply rotate(90) which is 90° CCW
-                            # - Result: Page becomes upright (0°) ✅
+                            # - Result: Page becomes upright (0°) 
                             rotation_to_apply = detected_rotation
                             logger.info(f"Page {page_num}: Applying {rotation_to_apply}° CCW rotation (to correct {detected_rotation}° CW rotation detected by Textract, confidence: {confidence:.2f}).")
                             print(f"Page {page_num}: Applying {rotation_to_apply}° CCW rotation (to correct {detected_rotation}° CW rotation)", flush=True)
@@ -525,11 +525,11 @@ def rotate_pdf_optimized(pdf_file_path, output_pdf_path):
         
         # Log Textract cost summary for this PDF
         total_pages = len(page_rotation_summary)
-        logger.info(f"💰 Textract Cost Summary for {os.path.basename(pdf_file_path)}:")
+        logger.info(f" Textract Cost Summary for {os.path.basename(pdf_file_path)}:")
         logger.info(f"   • Total pages processed: {total_pages}")
         logger.info(f"   • Cost per page: ${TEXTRACT_COST_PER_PAGE:.4f}")
         logger.info(f"   • Total Textract cost: ${total_textract_cost:.4f}")
-        print(f"💰 Textract Cost Summary for {os.path.basename(pdf_file_path)}:", flush=True)
+        print(f" Textract Cost Summary for {os.path.basename(pdf_file_path)}:", flush=True)
         print(f"   • Total pages processed: {total_pages}", flush=True)
         print(f"   • Cost per page: ${TEXTRACT_COST_PER_PAGE:.4f}", flush=True)
         print(f"   • Total Textract cost: ${total_textract_cost:.4f}", flush=True)
@@ -553,7 +553,7 @@ def rotate_pdf_optimized(pdf_file_path, output_pdf_path):
         # Log file size for verification
         try:
             file_size = os.path.getsize(output_pdf_path)
-            logger.info(f"✅ Saved corrected PDF: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
+            logger.info(f"Saved corrected PDF: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
         except Exception as e:
             logger.warning(f"Could not get file size: {str(e)}")
         return True, total_textract_cost
@@ -593,8 +593,8 @@ def preprocess_pdf_rotation(s3_client, bucket, key, email_id):
                 return key, 0.0
             
             # Log PDF-level Textract cost
-            logger.info(f"💰 Total Textract cost for PDF '{os.path.basename(key)}': ${pdf_textract_cost:.4f}")
-            print(f"💰 Total Textract cost for PDF '{os.path.basename(key)}': ${pdf_textract_cost:.4f}", flush=True)
+            logger.info(f" Total Textract cost for PDF '{os.path.basename(key)}': ${pdf_textract_cost:.4f}")
+            print(f" Total Textract cost for PDF '{os.path.basename(key)}': ${pdf_textract_cost:.4f}", flush=True)
 
             # Check if the new file is different from the old (e.g., if no rotation was needed)
             # This is a simple check; a more robust one would compare content/hash
@@ -623,10 +623,10 @@ def preprocess_pdf_rotation(s3_client, bucket, key, email_id):
             try:
                 s3_client.head_object(Bucket=bucket, Key=new_key)
                 file_size = s3_client.head_object(Bucket=bucket, Key=new_key)['ContentLength']
-                logger.info(f"✅ Verified: Corrected PDF uploaded successfully to s3://{bucket}/{new_key}")
+                logger.info(f" Verified: Corrected PDF uploaded successfully to s3://{bucket}/{new_key}")
                 logger.info(f"   File size: {file_size:,} bytes ({file_size / 1024 / 1024:.2f} MB)")
             except Exception as verify_error:
-                logger.error(f"⚠️ WARNING: Could not verify uploaded file: {str(verify_error)}")
+                logger.error(f"WARNING: Could not verify uploaded file: {str(verify_error)}")
             
             return new_key, pdf_textract_cost
 
@@ -679,7 +679,7 @@ def process_and_queue_single_pdf(pdf_data):
             s3_path,  # Original path, will update after rotation
             'Invoice'
         )
-        logger.info(f"✅ Created attachment entry: {attachment_id}")
+        logger.info(f"Created attachment entry: {attachment_id}")
         
         # Step 2: Preprocess PDF rotation (download, rotate, upload corrected version)
         logger.info(f"🔄 Starting PDF rotation for: {filename}")
@@ -693,11 +693,11 @@ def process_and_queue_single_pdf(pdf_data):
         # Step 3: Update S3 path if rotation was applied
         if corrected_key != pdf_key:
             corrected_s3_path = f"s3://{DESTINATION_BUCKET}/{corrected_key}"
-            logger.info(f"✅ PDF rotated. New S3 path: {corrected_s3_path}")
+            logger.info(f" PDF rotated. New S3 path: {corrected_s3_path}")
             rotation_applied = True
         else:
             corrected_s3_path = s3_path
-            logger.info(f"ℹ️ No rotation needed for: {filename}")
+            logger.info(f" No rotation needed for: {filename}")
             logger.info(f"   Using original S3 path: {corrected_s3_path}")
             rotation_applied = False
         
@@ -729,28 +729,28 @@ def process_and_queue_single_pdf(pdf_data):
         )
         
         processing_time = time.time() - start_time
-        logger.info(f"✅ Successfully processed and queued: {filename}")
-        logger.info(f"   📍 Final S3 path: {corrected_s3_path}")
-        logger.info(f"   🆔 Attachment ID: {attachment_id}")
-        logger.info(f"   ⏱️  Processing time: {processing_time:.2f}s")
-        logger.info(f"   👷 Worker: {worker_id}")
-        logger.info(f"   🔄 Rotation applied: {'Yes' if rotation_applied else 'No'}")
-        logger.info(f"   💰 Textract cost: ${pdf_textract_cost:.4f}")
+        logger.info(f"Successfully processed and queued: {filename}")
+        logger.info(f"    Final S3 path: {corrected_s3_path}")
+        logger.info(f"    Attachment ID: {attachment_id}")
+        logger.info(f"    Processing time: {processing_time:.2f}s")
+        logger.info(f"    Worker: {worker_id}")
+        logger.info(f"    Rotation applied: {'Yes' if rotation_applied else 'No'}")
+        logger.info(f"    Textract cost: ${pdf_textract_cost:.4f}")
         # Also print to stdout to ensure visibility in CloudWatch
-        print(f"✅ Successfully processed and queued: {filename}", flush=True)
-        print(f"   📍 Final S3 path: {corrected_s3_path}", flush=True)
-        print(f"   🆔 Attachment ID: {attachment_id}", flush=True)
-        print(f"   ⏱️  Processing time: {processing_time:.2f}s", flush=True)
-        print(f"   👷 Worker: {worker_id}", flush=True)
-        print(f"   🔄 Rotation applied: {'Yes' if rotation_applied else 'No'}", flush=True)
-        print(f"   💰 Textract cost: ${pdf_textract_cost:.4f}", flush=True)
+        print(f" Successfully processed and queued: {filename}", flush=True)
+        print(f"    Final S3 path: {corrected_s3_path}", flush=True)
+        print(f"    Attachment ID: {attachment_id}", flush=True)
+        print(f"    Processing time: {processing_time:.2f}s", flush=True)
+        print(f"    Worker: {worker_id}", flush=True)
+        print(f"    Rotation applied: {'Yes' if rotation_applied else 'No'}", flush=True)
+        print(f"    Textract cost: ${pdf_textract_cost:.4f}", flush=True)
         return attachment_id, None, processing_time, worker_id, corrected_s3_path, pdf_textract_cost
         
     except Exception as e:
         processing_time = time.time() - start_time
-        logger.error(f"❌ Failed to process PDF {pdf_data.get('filename', 'unknown')}: {str(e)}")
-        logger.error(f"   ⏱️  Processing time: {processing_time:.2f}s")
-        logger.error(f"   👷 Worker: {worker_id}")
+        logger.error(f" Failed to process PDF {pdf_data.get('filename', 'unknown')}: {str(e)}")
+        logger.error(f"    Processing time: {processing_time:.2f}s")
+        logger.error(f"    Worker: {worker_id}")
         import traceback
         logger.error(traceback.format_exc())
         
@@ -813,7 +813,7 @@ def main():
                 raise ValueError(error_msg)
             
             pdf_list = json.loads(response['Item']['pdf_list']['S'])
-            logger.info(f"✅ Retrieved PDF list from DynamoDB: {len(pdf_list)} PDF(s)")
+            logger.info(f" Retrieved PDF list from DynamoDB: {len(pdf_list)} PDF(s)")
         except Exception as e:
             error_msg = f"Failed to fetch PDF list from DynamoDB: {str(e)}"
             logger.error(error_msg)
@@ -832,9 +832,9 @@ def main():
             )
             if 'Item' in response and 'email_details' in response['Item']:
                 email_details = json.loads(response['Item']['email_details']['S'])
-                logger.info(f"✅ Retrieved email details from DynamoDB")
+                logger.info(f" Retrieved email details from DynamoDB")
             else:
-                logger.warning(f"⚠️ Email details not found in DynamoDB, using minimal data")
+                logger.warning(f" Email details not found in DynamoDB, using minimal data")
                 # Fallback: Create minimal email_details
                 email_details = {
                     'to': '',
@@ -875,7 +875,7 @@ def main():
                 'email_details': pdf_email_details  # Add email_details with filename to each PDF
             })
         
-        logger.info(f"📦 Prepared {len(pdf_attachments)} PDF(s) for processing")
+        logger.info(f" Prepared {len(pdf_attachments)} PDF(s) for processing")
         
         if not pdf_attachments:
             warning_msg = "WARNING: No PDFs to process, exiting"
@@ -888,7 +888,7 @@ def main():
         
         # AWS Textract is used for orientation detection - no model preloading needed
         logger.info("")
-        logger.info("🔧 Using AWS Textract for orientation detection (no model preloading required)")
+        logger.info(" Using AWS Textract for orientation detection (no model preloading required)")
         
         # Process all PDFs in parallel
         # Use ThreadPoolExecutor to process multiple PDFs simultaneously
@@ -897,8 +897,8 @@ def main():
         max_workers = min(8, len(pdf_attachments))  # Process up to 8 PDFs in parallel (Fargate optimized)
         
         processing_start_time = time.time()
-        logger.info(f"🚀 Starting parallel processing with {max_workers} workers")
-        logger.info(f"⏱️  Processing start time: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(processing_start_time))}")
+        logger.info(f" Starting parallel processing with {max_workers} workers")
+        logger.info(f" Processing start time: {time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime(processing_start_time))}")
         
         # Track worker statistics
         worker_stats = {}  # {worker_id: {'count': int, 'pdfs': list, 'total_time': float, 'avg_time': float}}
@@ -956,11 +956,11 @@ def main():
                 if error:
                     failed_count += 1
                     worker_stats[worker_id]['failed_count'] += 1
-                    logger.warning(f"❌ Failed: {pdf_data['filename']} (worker: {worker_id}, time: {processing_time:.2f}s)")
+                    logger.warning(f" Failed: {pdf_data['filename']} (worker: {worker_id}, time: {processing_time:.2f}s)")
                 else:
                     success_count += 1
                     worker_stats[worker_id]['success_count'] += 1
-                    logger.info(f"✅ Completed: {pdf_data['filename']} ({success_count}/{len(pdf_attachments)}, worker: {worker_id}, time: {processing_time:.2f}s)")
+                    logger.info(f" Completed: {pdf_data['filename']} ({success_count}/{len(pdf_attachments)}, worker: {worker_id}, time: {processing_time:.2f}s)")
                 
                 results.append({
                     'filename': pdf_data['filename'],
@@ -1007,17 +1007,17 @@ def main():
         sys.stdout.flush()  # Extra flush after header
         
         # Overall statistics
-        logger.info(f"📦 Total PDFs processed: {len(pdf_attachments)}")
-        logger.info(f"✅ Successful: {success_count}")
-        logger.info(f"❌ Failed: {failed_count}")
+        logger.info(f" Total PDFs processed: {len(pdf_attachments)}")
+        logger.info(f" Successful: {success_count}")
+        logger.info(f" Failed: {failed_count}")
         logger.info(f"")
-        print(f"📦 Total PDFs processed: {len(pdf_attachments)}", flush=True)
-        print(f"✅ Successful: {success_count}", flush=True)
-        print(f"❌ Failed: {failed_count}", flush=True)
+        print(f" Total PDFs processed: {len(pdf_attachments)}", flush=True)
+        print(f" Successful: {success_count}", flush=True)
+        print(f" Failed: {failed_count}", flush=True)
         print("", flush=True)
         
         # Timing information
-        logger.info(f"⏱️  TIMING INFORMATION:")
+        logger.info(f"  TIMING INFORMATION:")
         logger.info(f"   • Total job time: {total_job_time:.2f} seconds ({total_job_time/60:.2f} minutes)")
         logger.info(f"   • PDF processing time: {total_processing_time:.2f} seconds ({total_processing_time/60:.2f} minutes)")
         logger.info(f"   • Average time per PDF: {total_processing_time/len(pdf_attachments):.2f} seconds")
@@ -1027,7 +1027,7 @@ def main():
         logger.info(f"   • Processing start: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(processing_start_time))}")
         logger.info(f"   • Processing end: {time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(processing_end_time))}")
         logger.info(f"")
-        print(f"⏱️  TIMING INFORMATION:", flush=True)
+        print(f"  TIMING INFORMATION:", flush=True)
         print(f"   • Total job time: {total_job_time:.2f} seconds ({total_job_time/60:.2f} minutes)", flush=True)
         print(f"   • PDF processing time: {total_processing_time:.2f} seconds ({total_processing_time/60:.2f} minutes)", flush=True)
         print(f"   • Average time per PDF: {total_processing_time/len(pdf_attachments):.2f} seconds", flush=True)
